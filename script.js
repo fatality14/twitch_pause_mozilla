@@ -42,7 +42,7 @@ let injectScript =
 
 function inject(){
     let hook = document.createElement('script');
-    hook.innerHTML = injectScript;    
+    hook.appendChild(document.createTextNode(injectScript));
     hook.className = "twitch-pause";
     console.log("hook");
     document.head.appendChild(hook);
