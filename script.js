@@ -1,34 +1,48 @@
-console.log("initial")
+console.log("[TP] initial")
 
 let injectScript = 
 `
-    let pbuttonLost = true;
+    let debug = false;
     
+    let pageRef = undefined;
+    let pevent = undefined;
+    let pbutton = undefined;;
+    let pscreen = undefined;
+    
+    const logPrefix = '[TP] ';
     function tpLog(str){
-        const logPrefix = '[TP] ';
-        console.log(logPrefix + str);
+        if(debug){
+            console.log(logPrefix + str);
+        }
     }
 
     function setPauseEvent(){
-        let pbutton = document.querySelector('[data-a-target="player-play-pause-button"]');
-        let pscreen = document.querySelector('.click-handler');
+        try{
+            pscreen.removeEventListener('click', pevent);
+            tpLog("pause event removed")
+        }
+        catch{
+            tpLog("tried to remove event, but there were no event set");
+        }
 
+        pbutton = document.querySelector('[data-a-target="player-play-pause-button"]');
+        pscreen = document.querySelector('.click-handler');
         if(!pscreen){
             pscreen = document.querySelector('.video-player__overlay')
         }
 
-        if(pscreen){        
+        if(pscreen){
             if(!pbutton){
-                pbuttonLost = true;
                 tpLog("no pause button on the page")
             }
-            else if(pbuttonLost){
-                    let curr = pscreen.addEventListener('click', function(e){pbutton.click()});
-                    tpLog("pause event set");
-                    pbuttonLost = false;
-            }
             else{
-                tpLog("pause event is already set");
+                pevent = function(e){
+                    tpLog("pause")
+                    pbutton.click();
+                };
+                
+                pscreen.addEventListener('click', pevent);
+                tpLog("pause event set");
             }
         }
         else{
@@ -41,22 +55,13 @@ let injectScript =
 `;
 
 function inject(){
-    let hook = document.createElement('script');
-    hook.appendChild(document.createTextNode(injectScript));
-    hook.className = "twitch-pause";
-    console.log("hook");
-    document.head.appendChild(hook);
+    if (!document.querySelector(".twitch-pause")){
+        let hook = document.createElement('script');
+        hook.appendChild(document.createTextNode(injectScript));
+        hook.className = "twitch-pause";
+        console.log("[TP] hook");
+        document.head.appendChild(hook);
+    }
 }
 
-if(localStorage.getItem("twitchPauseRefreshState") == 1){
-    inject();
-    localStorage.setItem("twitchPauseRefreshState", 0);
-}
-
-window.addEventListener("load", function(){
-    inject();
-    localStorage.setItem("twitchPauseRefreshState", 0);
-})
-window.addEventListener("unload", function(){
-    localStorage.setItem("twitchPauseRefreshState", 1);
-})
+setInterval(inject, 1000);
