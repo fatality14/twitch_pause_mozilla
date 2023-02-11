@@ -1,44 +1,60 @@
 console.log("initial")
 
-let pbuttonLost = true;
-
-function setPauseEvent(){
-    let pbutton = document.querySelector('[data-a-target="player-play-pause-button"]');
-    let pscreen = document.querySelector('.click-handler');
+let injectScript = 
+`
+    let pbuttonLost = true;
     
-    if(!pbutton){
-        pbuttonLost = true;
-        console.log("no pause button on the page")
+    function tpLog(str){
+        const logPrefix = '[TP] ';
+        console.log(logPrefix + str);
     }
-    else if(pbuttonLost){
-            let curr = pscreen.addEventListener('click', function(e){pbutton.click()});
-            console.log("pause event set");
-            pbuttonLost = false;
+
+    function setPauseEvent(){
+        let pbutton = document.querySelector('[data-a-target="player-play-pause-button"]');
+        let pscreen = document.querySelector('.click-handler');
+
+        if(!pscreen){
+            pscreen = document.querySelector('.video-player__overlay')
+        }
+
+        if(pscreen){        
+            if(!pbutton){
+                pbuttonLost = true;
+                tpLog("no pause button on the page")
+            }
+            else if(pbuttonLost){
+                    let curr = pscreen.addEventListener('click', function(e){pbutton.click()});
+                    tpLog("pause event set");
+                    pbuttonLost = false;
+            }
+            else{
+                tpLog("pause event is already set");
+            }
+        }
+        else{
+            tpLog("no media found on the page")
+        }
     }
-    else{
-        console.log("pause event is already set");
-    }
+
+    tpLog("observe");
+    setInterval(setPauseEvent, 1000);
+`;
+
+function inject(){
+    let hook = document.createElement('script');
+    hook.innerHTML = injectScript;    
+    hook.className = "twitch-pause";
+    console.log("hook");
+    document.head.appendChild(hook);
 }
 
-let oldHref = document.location.href;
-const body = document.querySelector("body");
-const observer = new MutationObserver(mutations => {
-    if(oldHref != document.location.href){
-        oldHref = document.location.href;
-        setPauseEvent();
-    }
-})
-
-observer.observe(body, { childList: true, subtree: true });
-
-
 if(localStorage.getItem("twitchPauseRefreshState") == 1){
-    setPauseEvent();
+    inject();
     localStorage.setItem("twitchPauseRefreshState", 0);
 }
 
 window.addEventListener("load", function(){
-    setPauseEvent();
+    inject();
     localStorage.setItem("twitchPauseRefreshState", 0);
 })
 window.addEventListener("unload", function(){
